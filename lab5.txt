@@ -1,0 +1,95 @@
+# Import necessary libraries
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+
+# Load the MNIST dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+# Reshape the data to fit the model (28x28 images with 1 channel)
+X_train = X_train.reshape(X_train.shape[0], 28, 28, 1)
+X_test = X_test.reshape(X_test.shape[0], 28, 28, 1)
+
+# Normalize the data (scale pixel values to range 0-1)
+X_train = X_train.astype('float32') / 255.0
+X_test = X_test.astype('float32') / 255.0
+
+# Convert labels to one-hot encoding
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+
+# Build the CNN model
+model = Sequential()
+
+# Convolutional layer (32 filters, 3x3 kernel, ReLU activation)
+model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28, 28, 1)))
+
+# Pooling layer (Max Pooling with 2x2 pool size)
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+# Another convolutional layer (64 filters, 3x3 kernel, ReLU activation)
+model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
+
+# Another pooling layer (Max Pooling with 2x2 pool size)
+model.add(MaxPooling2D(pool_size=(2, 2)))
+
+# Flatten the feature maps into a 1D vector
+model.add(Flatten())
+
+# Fully connected layer with 128 neurons
+model.add(Dense(128, activation='relu'))
+
+# Dropout for regularization
+model.add(Dropout(0.5))
+
+# Output layer (10 neurons for 10 classes, softmax activation)
+model.add(Dense(10, activation='softmax'))
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Summarize the model
+model.summary()
+``
+# Train the CNN model
+history = model.fit(X_train, y_train, batch_size=128, epochs=10, validation_split=0.2, verbose=2)
+
+# Evaluate the model on the test set
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print(f'Test accuracy: {test_accuracy:.2f}')
+# Make a prediction
+import matplotlib.pyplot as plt
+
+# Select a test image
+index = 0
+image = X_test[index]
+
+# Reshape it to match the model input
+image = np.expand_dims(image, axis=0)
+
+# Predict the class
+prediction = model.predict(image)
+predicted_class = np.argmax(prediction)
+
+# Show the image and prediction
+plt.imshow(X_test[index].reshape(28, 28), cmap='gray')
+plt.title(f'Predicted Label: {predicted_class}')
+plt.show()
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Define the data augmentation generator
+datagen = ImageDataGenerator(
+    rotation_range=10, 
+    zoom_range=0.1, 
+    width_shift_range=0.1, 
+    height_shift_range=0.1
+)
+
+# Fit the data generator on the training set
+datagen.fit(X_train)
+
+# Train the model with augmented data
+history_augmented = model.fit(datagen.flow(X_train, y_train, batch_size=128), epochs=10, validation_data=(X_test, y_test))
